@@ -1,0 +1,1974 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Safari Kecil — Interactive Prototype</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Nunito:wght@600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-canvas: #FFF9EB;
+      --text-primary: #2B2118;
+      --text-secondary: #5C4938;
+      --accent-primary: #FF8A1E;
+      --accent-primary-lip: #C95E00;
+      --accent-secondary: #2B8A57;
+      --accent-secondary-lip: #1D5E3B;
+      --accent-audio: #1E6AD4;
+      --accent-audio-lip: #144994;
+      --border-subtle: #DFD1B8;
+      --spring-bouncy: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 35%, #2D2926 0%, #181614 100%);
+      font-family: 'Nunito', sans-serif;
+      color: var(--text-primary);
+      min-height: 100dvh;
+      width: 100vw;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      padding: 12px;
+    }
+
+    button {
+      font-family: inherit;
+      color: inherit;
+      cursor: pointer;
+      border: none;
+      background: none;
+    }
+
+    button:focus-visible {
+      outline: 3.5px solid var(--accent-audio);
+      outline-offset: 4px;
+    }
+
+    /* TOP PROTOTYPE HUD */
+    .proto-hud-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 872px;
+      color: #FFF9EB;
+      padding: 0 4px;
+    }
+    .proto-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .proto-brand h1 {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .proto-badge {
+      background: #2B8A57;
+      color: #FFFFFF;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 4px 12px;
+      border-radius: 999px;
+    }
+    .hud-btn {
+      background: rgba(255, 249, 235, 0.14);
+      color: #FFF9EB;
+      border: 1.5px solid rgba(255, 249, 235, 0.28);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 800;
+      transition: background-color 150ms ease, transform 150ms var(--spring-bouncy);
+    }
+    .hud-btn:hover {
+      background: rgba(255, 249, 235, 0.25);
+      transform: translateY(-1px);
+    }
+    .hud-btn:active {
+      transform: translateY(1px);
+    }
+
+    /* DEVICE SHELL */
+    .device-bezel {
+      width: 100%;
+      max-width: 872px;
+      background: #12100E;
+      padding: 14px;
+      border-radius: 40px;
+      border: 3px solid #3D3732;
+      box-shadow: 0 28px 60px rgba(0, 0, 0, 0.55), inset 0 0 0 2px #26221E;
+    }
+
+    .viewport-container {
+      width: 100%;
+      height: 390px;
+      background-color: var(--bg-canvas);
+      border-radius: 28px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* SCREEN LAYERS */
+    .screen-view {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg-canvas);
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px 32px;
+    }
+
+    .screen-view.is-active {
+      display: flex;
+      animation: screenFadeIn 240ms var(--ease-smooth) forwards;
+    }
+
+    @keyframes screenFadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* BOTTOM PROTOTYPE SCREEN SWITCHER */
+    .proto-nav-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 249, 235, 0.08);
+      border: 1.5px solid rgba(255, 249, 235, 0.16);
+      padding: 6px 10px;
+      border-radius: 999px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .nav-chip {
+      background: transparent;
+      color: #D7CEC0;
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 800;
+      transition: background-color 150ms ease, color 150ms ease;
+    }
+    .nav-chip:hover {
+      background: rgba(255, 249, 235, 0.16);
+      color: #FFFFFF;
+    }
+    .nav-chip.active {
+      background: var(--accent-primary);
+      color: #2B2118;
+    }
+
+    /* ANIMATIONS */
+    @keyframes mascotBob {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-7px) rotate(1.5deg); }
+    }
+    @keyframes sunBreathe {
+      0%, 100% { transform: scale(1); opacity: 0.92; }
+      50% { transform: scale(1.08); opacity: 1; }
+    }
+    @keyframes arrowNudge {
+      0%, 100% { transform: translateX(0px); }
+      50% { transform: translateX(10px); }
+    }
+    @keyframes gentleWiggle {
+      0%, 100% { transform: rotate(0deg); }
+      20% { transform: rotate(-5.5deg); }
+      40% { transform: rotate(5.5deg); }
+      60% { transform: rotate(-3.5deg); }
+      80% { transform: rotate(3.5deg); }
+    }
+    @keyframes stickerPop {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.12) rotate(-3deg); }
+      70% { transform: scale(0.96) rotate(2deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+    @keyframes soundWaveBar {
+      0%, 100% { transform: scaleY(0.45); opacity: 0.6; }
+      50% { transform: scaleY(1.15); opacity: 1; }
+    }
+    @keyframes confettiFloat {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .anim-mascot {
+      transform-origin: center bottom;
+      animation: mascotBob 3.2s ease-in-out infinite;
+    }
+    .anim-sun {
+      transform-origin: 710px 78px;
+      animation: sunBreathe 4s ease-in-out infinite;
+    }
+    .anim-arrow {
+      animation: arrowNudge 1.5s var(--ease-smooth) infinite;
+    }
+    .anim-wiggle-once {
+      animation: gentleWiggle 420ms ease-in-out 1;
+    }
+    .anim-pop-once {
+      animation: stickerPop 450ms var(--spring-bouncy) 1;
+    }
+    .anim-confetti {
+      animation: confettiFloat 3s ease-in-out infinite;
+    }
+
+    /* TOP BAR & BUTTONS */
+    .top-bar {
+      width: 100%;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 10;
+    }
+
+    .tactile-btn {
+      transition: transform 180ms var(--spring-bouncy), background-color 160ms ease, border-color 160ms ease;
+    }
+    .tactile-btn:hover {
+      transform: translateY(-3px) scale(1.03);
+    }
+    .tactile-btn:active {
+      transform: translateY(3px) scale(0.98);
+    }
+
+    .btn-parent-gate {
+      width: 52px;
+      height: 52px;
+      border-radius: 999px;
+      background: #FFFFFF;
+      border: 2.5px solid #DFD1B8;
+      box-shadow: 0 4px 0 #DFD1B8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-parent-gate:hover {
+      border-color: #2B2118;
+    }
+
+    .btn-back-pill {
+      height: 52px;
+      padding: 0 20px;
+      border-radius: 999px;
+      background: #FFFFFF;
+      border: 2.5px solid #2B2118;
+      box-shadow: 0 4px 0 #DFD1B8;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: #2B2118;
+    }
+    .btn-back-pill:hover {
+      background: #FFF3D6;
+    }
+
+    /* VOICE OVER BUBBLE */
+    .vo-bubble {
+      height: 60px;
+      padding: 6px 22px 6px 8px;
+      background: #FFFFFF;
+      border: 2.5px solid #2B2118;
+      box-shadow: 0 4px 0 #DFD1B8;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: transform 180ms var(--spring-bouncy), background-color 180ms ease, border-color 180ms ease;
+    }
+    .vo-bubble:hover {
+      transform: translateY(-2px) scale(1.02);
+      background: #F4F8FF;
+    }
+    .vo-bubble:active {
+      transform: translateY(3px) scale(0.99);
+    }
+    .vo-bubble.guide-retry {
+      background: #FEF2E6;
+      border-color: #D96B14;
+      box-shadow: 0 4px 0 #D96B14;
+    }
+    .vo-bubble.guide-success {
+      background: #E3F7EC;
+      border-color: #2B8A57;
+      box-shadow: 0 4px 0 #2B8A57;
+    }
+    .btn-speaker {
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      background: var(--accent-audio);
+      box-shadow: 0 3px 0 var(--accent-audio-lip);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .wave-bar { transform-origin: center; }
+    .vo-bubble:hover .wave-bar-1,
+    .vo-bubble.is-speaking .wave-bar-1 {
+      animation: soundWaveBar 500ms ease-in-out infinite;
+    }
+    .vo-bubble:hover .wave-bar-2,
+    .vo-bubble.is-speaking .wave-bar-2 {
+      animation: soundWaveBar 500ms ease-in-out 160ms infinite;
+    }
+    .vo-text {
+      font-size: 17px;
+      font-weight: 800;
+      color: #2B2118;
+      white-space: nowrap;
+    }
+
+    /* PROGRESS PILL */
+    .progress-pill {
+      height: 48px;
+      padding: 0 16px;
+      background: #FFFFFF;
+      border: 2.5px solid #2B2118;
+      box-shadow: 0 4px 0 #DFD1B8;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .step-dots {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .step-dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 999px;
+      background: #EFE4CE;
+      border: 2px solid #DFD1B8;
+      transition: transform 250ms var(--spring-bouncy), background-color 200ms ease;
+    }
+    .step-dot.done {
+      background: #FFB800;
+      border-color: #2B2118;
+      transform: scale(1.08);
+    }
+    .progress-num {
+      font-size: 18px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      color: #2B2118;
+    }
+
+    /* PRIMARY & SECONDARY CTA BUTTONS */
+    .btn-cta-primary {
+      height: 76px;
+      padding: 0 38px;
+      border-radius: 999px;
+      background: var(--accent-primary);
+      border: 3px solid #2B2118;
+      box-shadow: 0 6px 0 var(--accent-primary-lip);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #2B2118;
+      transition: transform 180ms var(--spring-bouncy), background-color 160ms ease;
+    }
+    .btn-cta-primary:hover {
+      background: #FF9938;
+      transform: translateY(-4px) scale(1.04);
+    }
+    .btn-cta-primary:active {
+      background: #F57C0A;
+      transform: translateY(4px) scale(0.98);
+      box-shadow: 0 2px 0 var(--accent-primary-lip);
+    }
+
+    .btn-cta-secondary {
+      height: 72px;
+      padding: 0 28px;
+      border-radius: 999px;
+      background: #FFFFFF;
+      border: 3px solid #2B2118;
+      box-shadow: 0 6px 0 #DFD1B8;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: #2B2118;
+      transition: transform 180ms var(--spring-bouncy), background-color 160ms ease;
+    }
+    .btn-cta-secondary:hover {
+      background: #FFF3D6;
+      transform: translateY(-3px) scale(1.03);
+    }
+    .btn-cta-secondary:active {
+      transform: translateY(4px) scale(0.98);
+      box-shadow: 0 2px 0 #DFD1B8;
+    }
+
+    .savanna-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* ANIMAL CHOICE CARDS */
+    .cards-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      position: relative;
+      z-index: 10;
+      margin-bottom: 8px;
+    }
+    .animal-card {
+      width: 196px;
+      height: 224px;
+      background: #FFFFFF;
+      border: 3px solid #2B2118;
+      box-shadow: 0 6px 0 #DFD1B8;
+      border-radius: 26px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      transition: transform 200ms var(--spring-bouncy), background-color 180ms ease, border-color 180ms ease, opacity 200ms ease;
+    }
+    .animal-card:hover {
+      transform: translateY(-6px) scale(1.04);
+      border-color: #FF8A1E;
+      box-shadow: 0 10px 0 #FF8A1E;
+    }
+    .animal-card:active {
+      transform: translateY(3px) scale(0.98);
+    }
+    .animal-card.state-retry {
+      background: #FEF2E6;
+      border-color: #D96B14;
+      box-shadow: 0 6px 0 #D96B14;
+    }
+    .animal-card.state-correct {
+      background: #E3F7EC;
+      border-color: #2B8A57;
+      box-shadow: 0 6px 0 #2B8A57;
+    }
+    .animal-card.is-dimmed {
+      opacity: 0.58;
+    }
+    .card-label {
+      font-size: 22px;
+      font-weight: 800;
+      color: #2B2118;
+    }
+    .status-badge-corner {
+      position: absolute;
+      top: -12px;
+      right: -12px;
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 3px solid #2B2118;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+    }
+    .animal-card.state-correct .status-badge-corner.badge-star {
+      display: flex;
+      background: #FFB800;
+      color: #2B2118;
+    }
+    .animal-card.state-retry .status-badge-corner.badge-retry {
+      display: flex;
+      background: #FF8A1E;
+      color: #2B2118;
+    }
+
+    /* MAP ZONE CARDS */
+    .zones-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      position: relative;
+      z-index: 10;
+      margin-bottom: 10px;
+    }
+    .zone-island {
+      width: 236px;
+      height: 226px;
+      border-radius: 28px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      transition: transform 200ms var(--spring-bouncy), background-color 200ms ease, border-color 200ms ease;
+    }
+    .zone-island.unlocked {
+      background: #FFFFFF;
+      border: 3.5px solid #FF8A1E;
+      box-shadow: 0 7px 0 #C95E00;
+    }
+    .zone-island.unlocked:hover {
+      transform: translateY(-6px) scale(1.04);
+    }
+    .zone-island.unlocked:active {
+      transform: translateY(3px) scale(0.98);
+    }
+    .zone-island.completed {
+      background: #E3F7EC;
+      border: 3.5px solid #2B8A57;
+      box-shadow: 0 7px 0 #1D5E3B;
+    }
+    .zone-island.completed:hover {
+      transform: translateY(-4px) scale(1.03);
+    }
+    .zone-island.locked {
+      background: #EFE4CE;
+      border: 3px solid #C8B89D;
+      box-shadow: 0 5px 0 #C8B89D;
+    }
+    .zone-pill {
+      padding: 6px 16px;
+      border-radius: 999px;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    /* DRAG AND DROP STAGE */
+    .stage-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      position: relative;
+      z-index: 10;
+      margin-bottom: 8px;
+    }
+    .food-tray {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .drag-token {
+      width: 112px;
+      height: 104px;
+      background: #FFFFFF;
+      border: 3px solid #2B2118;
+      box-shadow: 0 5px 0 #DFD1B8;
+      border-radius: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: transform 200ms var(--spring-bouncy), background-color 180ms ease, opacity 200ms ease;
+    }
+    .drag-token:hover {
+      transform: translateY(-4px) scale(1.07) rotate(-3deg);
+      border-color: #FF8A1E;
+      box-shadow: 0 8px 0 #C95E00;
+    }
+    .drag-token:active {
+      transform: scale(1.05);
+    }
+    .drag-token.active-hint {
+      border-color: #FF8A1E;
+      box-shadow: 0 5px 0 #C95E00;
+    }
+    .drag-token.is-eaten {
+      opacity: 0.35;
+      pointer-events: none;
+      transform: scale(0.92);
+    }
+    .token-label {
+      font-size: 15px;
+      font-weight: 800;
+      color: #2B2118;
+    }
+    .drop-target-zone {
+      width: 148px;
+      height: 148px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 4px dashed #2B8A57;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: transform 220ms var(--spring-bouncy), background-color 200ms ease, border-color 200ms ease;
+    }
+    .drop-target-zone.drag-over,
+    .drop-target-zone:hover {
+      background: #FFF3D6;
+      border-color: #FF8A1E;
+      transform: scale(1.06);
+    }
+    .drop-target-zone.fed {
+      background: #E3F7EC;
+      border-color: #2B8A57;
+      border-style: solid;
+      transform: scale(1.05);
+    }
+    .character-stage {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      background: #FFFFFF;
+      border: 3px solid #2B2118;
+      box-shadow: 0 6px 0 #DFD1B8;
+      border-radius: 28px;
+      padding: 16px 24px;
+    }
+
+    /* CELEBRATION & STICKER BOOK */
+    .celebration-card {
+      background: #FFFFFF;
+      border: 3px solid #2B2118;
+      box-shadow: 0 8px 0 #DFD1B8;
+      border-radius: 32px;
+      padding: 20px 36px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      z-index: 10;
+      margin: auto;
+    }
+    .sticker-grid {
+      display: flex;
+      gap: 22px;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      z-index: 10;
+      margin-bottom: 10px;
+    }
+    .sticker-slot {
+      width: 168px;
+      height: 204px;
+      border-radius: 26px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      transition: transform 200ms var(--spring-bouncy), background-color 200ms ease;
+    }
+    .sticker-slot.collected {
+      background: #FFFFFF;
+      border: 3px solid #2B8A57;
+      box-shadow: 0 6px 0 #2B8A57;
+    }
+    .sticker-slot.collected:hover {
+      transform: translateY(-6px) scale(1.05) rotate(2deg);
+      background: #F4FCF7;
+    }
+    .sticker-slot.empty {
+      background: #EFE4CE;
+      border: 3px dashed #B5A48B;
+    }
+
+    /* PARENTAL GATE MODAL */
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(43, 33, 24, 0.75);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+    .modal-backdrop.is-open {
+      display: flex;
+    }
+    .parental-modal {
+      width: 520px;
+      background: #FFFFFF;
+      border: 3px solid #2B2118;
+      box-shadow: 0 10px 0 #2B2118;
+      border-radius: 28px;
+      padding: 22px 32px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      text-align: center;
+    }
+    .hold-gate-btn {
+      width: 88px;
+      height: 88px;
+      border-radius: 999px;
+      background: #FFF3D6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .hold-ring-svg {
+      position: absolute;
+      inset: 0;
+      transform: rotate(-90deg);
+      pointer-events: none;
+    }
+    .hold-ring-progress {
+      stroke-dasharray: 245;
+      stroke-dashoffset: 245;
+      transition: stroke-dashoffset 100ms linear;
+    }
+    .hold-gate-btn.holding .hold-ring-progress {
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 2000ms linear;
+    }
+    .parent-controls-panel {
+      display: none;
+      width: 100%;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 4px;
+    }
+    .parent-controls-panel.unlocked {
+      display: flex;
+    }
+    .parent-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #FFF9EB;
+      border: 2px solid #DFD1B8;
+      border-radius: 16px;
+      padding: 10px 16px;
+      font-weight: 800;
+      font-size: 15px;
+    }
+    .pill-toggle {
+      padding: 5px 14px;
+      border-radius: 999px;
+      border: 2px solid #2B2118;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 14px;
+      font-weight: 700;
+      background: #2B8A57;
+      color: #FFFFFF;
+    }
+    .pill-toggle.off {
+      background: #EFE4CE;
+      color: #5C4938;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP PROTOTYPE HUD -->
+  <div class="proto-hud-top">
+    <div class="proto-brand">
+      <span class="proto-badge">&#9654; Interactive Prototype</span>
+      <h1>Safari Kecil</h1>
+    </div>
+    <button type="button" class="hud-btn" id="btn-reset-top">&#8634; Reset Simulasi</button>
+  </div>
+
+  <!-- DEVICE VIEWPORT -->
+  <div class="device-bezel">
+    <div class="viewport-container">
+
+      <!-- ========================================================= -->
+      <!-- S01: START SCREEN                                         -->
+      <!-- ========================================================= -->
+      <section class="screen-view is-active" id="screen-S01" aria-label="Layar Mulai">
+        <svg class="savanna-bg" viewBox="0 0 844 390" preserveAspectRatio="none" fill="none">
+          <circle class="anim-sun" cx="710" cy="78" r="44" fill="#FFE082"/>
+          <path d="M0 290C180 245 340 315 540 275C680 248 770 265 844 285V390H0V290Z" fill="#F5E6C4"/>
+          <path d="M0 325C220 295 450 340 844 305V390H0V325Z" fill="#E6D2A8"/>
+          <rect x="78" y="210" width="14" height="90" rx="6" fill="#8C6239"/>
+          <ellipse cx="85" cy="205" rx="68" ry="22" fill="#4CA66B"/>
+          <ellipse cx="85" cy="194" rx="46" ry="16" fill="#5EBA7D"/>
+        </svg>
+
+        <div class="top-bar">
+          <button type="button" class="btn-parent-gate tactile-btn" id="btn-open-gate" aria-label="Pengaturan Orang Tua">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <rect x="5" y="11" width="14" height="10" rx="3" fill="#5C4938"/>
+              <path d="M8 11V7C8 4.79 9.79 3 12 3C14.21 3 16 4.79 16 7V11" stroke="#5C4938" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+
+          <button type="button" class="vo-bubble" id="s01-vo-btn" aria-label="Putar suara panduan">
+            <div class="btn-speaker">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M4 9H8L13 5V19L8 15H4V9Z" fill="#FFFFFF"/>
+                <path class="wave-bar wave-bar-1" d="M16 9C17 9.9 17.5 10.9 17.5 12C17.5 13.1 17 14.1 16 15" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+                <path class="wave-bar wave-bar-2" d="M19 6.5C20.6 8 21.5 9.9 21.5 12C21.5 14.1 20.6 16 19 17.5" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="vo-text">&ldquo;Halo! Ayo bertualang di Safari Kecil!&rdquo;</span>
+          </button>
+
+          <button type="button" class="btn-back-pill tactile-btn" id="btn-s01-stickers">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L14.9 8.2L21.7 9.1L16.7 13.9L17.9 20.6L12 17.4L6.1 20.6L7.3 13.9L2.3 9.1L9.1 8.2L12 2Z" fill="#FFB800" stroke="#2B2118" stroke-width="2"/>
+            </svg>
+            <span>Stiker (<span id="s01-sticker-count">0</span>)</span>
+          </button>
+        </div>
+
+        <div style="display:flex; align-items:center; justify-content:center; gap:44px; position:relative; z-index:10; margin-bottom:12px;">
+          <svg class="anim-mascot" width="215" height="215" viewBox="0 0 220 220" fill="none">
+            <circle cx="110" cy="116" r="78" fill="#D96B14" stroke="#2B2118" stroke-width="4"/>
+            <circle cx="110" cy="116" r="64" fill="#FF9E2C"/>
+            <circle cx="62" cy="68" r="18" fill="#FFCA57" stroke="#2B2118" stroke-width="4"/>
+            <circle cx="158" cy="68" r="18" fill="#FFCA57" stroke="#2B2118" stroke-width="4"/>
+            <circle cx="110" cy="118" r="50" fill="#FFCA57" stroke="#2B2118" stroke-width="4"/>
+            <circle cx="92" cy="108" r="7" fill="#2B2118"/>
+            <circle cx="94" cy="106" r="2.5" fill="#FFFFFF"/>
+            <circle cx="128" cy="108" r="7" fill="#2B2118"/>
+            <circle cx="130" cy="106" r="2.5" fill="#FFFFFF"/>
+            <ellipse cx="78" cy="122" rx="9" ry="5" fill="#FF8A65" opacity="0.7"/>
+            <ellipse cx="142" cy="122" rx="9" ry="5" fill="#FF8A65" opacity="0.7"/>
+            <ellipse cx="110" cy="130" rx="22" ry="16" fill="#FFF3D6"/>
+            <path d="M102 122C102 119 118 119 118 122L110 131L102 122Z" fill="#2B2118"/>
+            <path d="M98 134C103 140 117 140 122 134" stroke="#2B2118" stroke-width="3.5" stroke-linecap="round"/>
+          </svg>
+
+          <div style="display:flex; flex-direction:column; align-items:flex-start; gap:18px;">
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <span style="background:#2B8A57; color:#FFFFFF; padding:4px 14px; border-radius:999px; font-weight:800; font-size:14px; align-self:flex-start;">BELAJAR MENGENAL HEWAN</span>
+              <h2 style="font-family:'Fredoka',sans-serif; font-size:56px; font-weight:700; line-height:1.05; color:#2B2118;">Safari Kecil</h2>
+            </div>
+
+            <button type="button" class="btn-cta-primary" id="btn-start-main">
+              <svg width="30" height="30" viewBox="0 0 24 24" fill="none">
+                <path d="M6 4.5C6 3.3 7.3 2.6 8.3 3.2L19.5 10.7C20.4 11.3 20.4 12.7 19.5 13.3L8.3 20.8C7.3 21.4 6 20.7 6 19.5V4.5Z" fill="#2B2118"/>
+              </svg>
+              <span>MAIN</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- S02: PETA EKSPLORASI (ZONE SELECTION)                     -->
+      <!-- ========================================================= -->
+      <section class="screen-view" id="screen-S02" aria-label="Peta Eksplorasi">
+        <div class="top-bar">
+          <button type="button" class="btn-back-pill tactile-btn" data-goto="S01">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M15 19L8 12L15 5" stroke="#2B2118" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Mulai</span>
+          </button>
+
+          <button type="button" class="vo-bubble" id="s02-vo">
+            <div class="btn-speaker">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M4 9H8L13 5V19L8 15H4V9Z" fill="#FFFFFF"/>
+                <path class="wave-bar wave-bar-1" d="M16 9C17 9.9 17.5 10.9 17.5 12C17.5 13.1 17 14.1 16 15" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+                <path class="wave-bar wave-bar-2" d="M19 6.5C20.6 8 21.5 9.9 21.5 12C21.5 14.1 20.6 16 19 17.5" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="vo-text" id="s02-vo-text">&ldquo;Pilih tempat bertualang! Ketuk Padang Rumput!&rdquo;</span>
+          </button>
+
+          <button type="button" class="progress-pill tactile-btn" data-goto="S07" title="Buka Buku Stiker">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2L14.9 8.2L21.7 9.1L16.7 13.9L17.9 20.6L12 17.4L6.1 20.6L7.3 13.9L2.3 9.1L9.1 8.2L12 2Z" fill="#FFB800" stroke="#2B2118" stroke-width="2"/>
+            </svg>
+            <span class="progress-num" id="s02-stars">0/3</span>
+          </button>
+        </div>
+
+        <div class="zones-row">
+          <!-- Padang Rumput -->
+          <button type="button" class="zone-island unlocked" id="zone-padang">
+            <span id="zone-padang-badge" style="position:absolute; top:-12px; background:#FF8A1E; color:#2B2118; border:2.5px solid #2B2118; font-weight:800; font-size:12px; padding:3px 12px; border-radius:999px;">AYO MAIN!</span>
+            <svg width="132" height="118" viewBox="0 0 132 118" fill="none">
+              <ellipse cx="66" cy="96" rx="56" ry="18" fill="#8CD17D" stroke="#2B2118" stroke-width="3"/>
+              <rect x="61" y="42" width="10" height="52" rx="4" fill="#8C6239" stroke="#2B2118" stroke-width="2.5"/>
+              <ellipse cx="66" cy="38" rx="44" ry="16" fill="#2B8A57" stroke="#2B2118" stroke-width="2.5"/>
+              <circle cx="96" cy="22" r="12" fill="#FFB800"/>
+            </svg>
+            <span class="zone-pill" id="zone-padang-pill" style="background:#FF8A1E; color:#2B2118; border:2px solid #2B2118;">Padang Rumput</span>
+          </button>
+
+          <!-- Hutan Rimba -->
+          <button type="button" class="zone-island locked" id="zone-hutan">
+            <span id="zone-hutan-badge" style="display:none; position:absolute; top:-12px; background:#2B8A57; color:#FFFFFF; border:2.5px solid #2B2118; font-weight:800; font-size:12px; padding:3px 12px; border-radius:999px;">BARU TERBUKA!</span>
+            <svg width="132" height="118" viewBox="0 0 132 118" fill="none">
+              <ellipse id="hutan-ground" cx="66" cy="96" rx="56" ry="18" fill="#D5C6AD"/>
+              <circle id="hutan-leaf-1" cx="48" cy="56" r="24" fill="#BFB096"/>
+              <circle id="hutan-leaf-2" cx="84" cy="56" r="24" fill="#BFB096"/>
+              <circle id="hutan-leaf-3" cx="66" cy="40" r="26" fill="#C9BA9F"/>
+              <g id="hutan-lock-icon">
+                <rect x="52" y="54" width="28" height="22" rx="6" fill="#5C4938"/>
+                <path d="M58 54V46C58 41.6 61.6 38 66 38C70.4 38 74 41.6 74 46V54" stroke="#5C4938" stroke-width="4" stroke-linecap="round"/>
+              </g>
+            </svg>
+            <span class="zone-pill" id="zone-hutan-pill" style="background:#DFD1B8; color:#5C4938;">Hutan Rimba</span>
+          </button>
+
+          <!-- Peternakan -->
+          <button type="button" class="zone-island locked" id="zone-peternakan">
+            <svg width="132" height="118" viewBox="0 0 132 118" fill="none">
+              <ellipse cx="66" cy="96" rx="56" ry="18" fill="#D5C6AD"/>
+              <path d="M36 62L66 36L96 62V88H36V62Z" fill="#C9BA9F"/>
+              <rect x="52" y="54" width="28" height="22" rx="6" fill="#5C4938"/>
+              <path d="M58 54V46C58 41.6 61.6 38 66 38C70.4 38 74 41.6 74 46V54" stroke="#5C4938" stroke-width="4" stroke-linecap="round"/>
+            </svg>
+            <span class="zone-pill" style="background:#DFD1B8; color:#5C4938;">Peternakan</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- S03: AKTIVITAS 1 - TEBAK SUARA                            -->
+      <!-- ========================================================= -->
+      <section class="screen-view" id="screen-S03" aria-label="Aktivitas 1 Tebak Suara">
+        <div class="top-bar">
+          <button type="button" class="btn-back-pill tactile-btn" data-goto="S02">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M15 19L8 12L15 5" stroke="#2B2118" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Peta</span>
+          </button>
+
+          <button type="button" class="vo-bubble" id="s03-vo">
+            <div class="btn-speaker">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M4 9H8L13 5V19L8 15H4V9Z" fill="#FFFFFF"/>
+                <path class="wave-bar wave-bar-1" d="M16 9C17 9.9 17.5 10.9 17.5 12C17.5 13.1 17 14.1 16 15" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+                <path class="wave-bar wave-bar-2" d="M19 6.5C20.6 8 21.5 9.9 21.5 12C21.5 14.1 20.6 16 19 17.5" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="vo-text" id="s03-vo-text">&ldquo;Aummm! Suara hewan apa itu?&rdquo;</span>
+          </button>
+
+          <div class="progress-pill">
+            <div class="step-dots">
+              <div class="step-dot" id="s03-dot-1"></div>
+              <div class="step-dot" id="s03-dot-2"></div>
+              <div class="step-dot" id="s03-dot-3"></div>
+            </div>
+            <span class="progress-num" id="s03-prog">0/3</span>
+          </div>
+        </div>
+
+        <div class="cards-row" id="s03-cards">
+          <!-- Singa (Correct) -->
+          <button type="button" class="animal-card" id="card-singa" data-correct="true" data-animal="Singa">
+            <div class="status-badge-corner badge-star">&#9733;</div>
+            <svg width="136" height="136" viewBox="0 0 140 140" fill="none">
+              <circle cx="70" cy="72" r="50" fill="#D96B14" stroke="#2B2118" stroke-width="3.5"/>
+              <circle cx="70" cy="74" r="34" fill="#FFCA57" stroke="#2B2118" stroke-width="3.5"/>
+              <circle cx="58" cy="68" r="5" fill="#2B2118"/>
+              <circle cx="82" cy="68" r="5" fill="#2B2118"/>
+              <path d="M64 78L70 84L76 78H64Z" fill="#2B2118"/>
+              <path d="M61 88C65 92 75 92 79 88" stroke="#2B2118" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+            <span class="card-label" id="label-singa">Singa</span>
+          </button>
+
+          <!-- Gajah -->
+          <button type="button" class="animal-card" id="card-gajah" data-correct="false" data-animal="Gajah">
+            <div class="status-badge-corner badge-retry">?</div>
+            <svg width="136" height="136" viewBox="0 0 140 140" fill="none">
+              <ellipse cx="34" cy="72" rx="22" ry="30" fill="#8FA8B8" stroke="#2B2118" stroke-width="3.5"/>
+              <ellipse cx="106" cy="72" rx="22" ry="30" fill="#8FA8B8" stroke="#2B2118" stroke-width="3.5"/>
+              <circle cx="70" cy="70" r="36" fill="#A9C0CE" stroke="#2B2118" stroke-width="3.5"/>
+              <circle cx="57" cy="64" r="5" fill="#2B2118"/>
+              <circle cx="83" cy="64" r="5" fill="#2B2118"/>
+              <path d="M62 76V102C62 110 76 110 76 102V94" stroke="#2B2118" stroke-width="14" stroke-linecap="round"/>
+              <path d="M62 76V102C62 110 76 110 76 102V94" stroke="#A9C0CE" stroke-width="7" stroke-linecap="round"/>
+            </svg>
+            <span class="card-label">Gajah</span>
+          </button>
+
+          <!-- Jerapah -->
+          <button type="button" class="animal-card" id="card-jerapah" data-correct="false" data-animal="Jerapah">
+            <div class="status-badge-corner badge-retry">?</div>
+            <svg width="136" height="136" viewBox="0 0 140 140" fill="none">
+              <line x1="56" y1="24" x2="56" y2="44" stroke="#2B2118" stroke-width="5" stroke-linecap="round"/>
+              <circle cx="56" cy="22" r="6" fill="#D96B14" stroke="#2B2118" stroke-width="3"/>
+              <line x1="84" y1="24" x2="84" y2="44" stroke="#2B2118" stroke-width="5" stroke-linecap="round"/>
+              <circle cx="84" cy="22" r="6" fill="#D96B14" stroke="#2B2118" stroke-width="3"/>
+              <rect x="44" y="40" width="52" height="68" rx="26" fill="#FFD15C" stroke="#2B2118" stroke-width="3.5"/>
+              <circle cx="58" cy="64" r="5" fill="#2B2118"/>
+              <circle cx="82" cy="64" r="5" fill="#2B2118"/>
+              <ellipse cx="70" cy="88" rx="20" ry="14" fill="#F4A261" stroke="#2B2118" stroke-width="3"/>
+              <circle cx="63" cy="86" r="3" fill="#2B2118"/>
+              <circle cx="77" cy="86" r="3" fill="#2B2118"/>
+            </svg>
+            <span class="card-label">Jerapah</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- S04: AKTIVITAS 2 - BERI MAKAN HEWAN                       -->
+      <!-- ========================================================= -->
+      <section class="screen-view" id="screen-S04" aria-label="Aktivitas 2 Beri Makan">
+        <div class="top-bar">
+          <button type="button" class="btn-back-pill tactile-btn" data-goto="S02">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M15 19L8 12L15 5" stroke="#2B2118" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Peta</span>
+          </button>
+
+          <button type="button" class="vo-bubble" id="s04-vo">
+            <div class="btn-speaker">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M4 9H8L13 5V19L8 15H4V9Z" fill="#FFFFFF"/>
+                <path class="wave-bar wave-bar-1" d="M16 9C17 9.9 17.5 10.9 17.5 12C17.5 13.1 17 14.1 16 15" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+                <path class="wave-bar wave-bar-2" d="M19 6.5C20.6 8 21.5 9.9 21.5 12C21.5 14.1 20.6 16 19 17.5" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="vo-text" id="s04-vo-text">&ldquo;Gajah lapar! Ketuk atau tarik pisang!&rdquo;</span>
+          </button>
+
+          <div class="progress-pill">
+            <div class="step-dots">
+              <div class="step-dot done" id="s04-dot-1"></div>
+              <div class="step-dot" id="s04-dot-2"></div>
+              <div class="step-dot" id="s04-dot-3"></div>
+            </div>
+            <span class="progress-num" id="s04-prog">1/3</span>
+          </div>
+        </div>
+
+        <div class="stage-row">
+          <div class="food-tray">
+            <button type="button" class="drag-token active-hint" id="token-pisang" draggable="true">
+              <svg width="56" height="56" viewBox="0 0 64 64" fill="none">
+                <path d="M16 44C28 48 46 38 48 16C42 18 36 34 16 44Z" fill="#FFD13B" stroke="#2B2118" stroke-width="3.5" stroke-linejoin="round"/>
+                <path d="M47 15L51 11" stroke="#5C4938" stroke-width="4" stroke-linecap="round"/>
+              </svg>
+              <span class="token-label">Pisang</span>
+            </button>
+
+            <button type="button" class="drag-token" id="token-tulang" draggable="true">
+              <svg width="56" height="56" viewBox="0 0 64 64" fill="none">
+                <rect x="14" y="26" width="36" height="12" rx="6" fill="#FFF3D6" stroke="#2B2118" stroke-width="3.5"/>
+                <circle cx="14" cy="24" r="6" fill="#FFF3D6" stroke="#2B2118" stroke-width="3"/>
+                <circle cx="14" cy="38" r="6" fill="#FFF3D6" stroke="#2B2118" stroke-width="3"/>
+                <circle cx="50" cy="24" r="6" fill="#FFF3D6" stroke="#2B2118" stroke-width="3"/>
+                <circle cx="50" cy="38" r="6" fill="#FFF3D6" stroke="#2B2118" stroke-width="3"/>
+              </svg>
+              <span class="token-label">Tulang</span>
+            </button>
+          </div>
+
+          <svg class="anim-arrow" width="72" height="44" viewBox="0 0 72 44" fill="none">
+            <path d="M8 22H56M56 22L40 8M56 22L40 36" stroke="#FF8A1E" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+
+          <div class="character-stage">
+            <button type="button" class="drop-target-zone" id="s04-dropzone">
+              <div id="s04-drop-icon">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                  <path d="M10 28C18 30 28 24 30 10" stroke="#2B8A57" stroke-width="3.5" stroke-dasharray="5 5" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <span style="font-size:13px; font-weight:800; color:#2B8A57;" id="s04-drop-label">TARUH SINI</span>
+            </button>
+
+            <div style="display:flex; flex-direction:column; align-items:center; gap:6px;" id="s04-elephant">
+              <svg width="150" height="150" viewBox="0 0 140 140" fill="none">
+                <ellipse cx="34" cy="72" rx="22" ry="30" fill="#8FA8B8" stroke="#2B2118" stroke-width="3.5"/>
+                <ellipse cx="106" cy="72" rx="22" ry="30" fill="#8FA8B8" stroke="#2B2118" stroke-width="3.5"/>
+                <circle cx="70" cy="70" r="36" fill="#A9C0CE" stroke="#2B2118" stroke-width="3.5"/>
+                <circle cx="57" cy="64" r="5" fill="#2B2118"/>
+                <circle cx="83" cy="64" r="5" fill="#2B2118"/>
+                <path d="M62 76V102C62 110 76 110 76 102V94" stroke="#2B2118" stroke-width="14" stroke-linecap="round"/>
+                <path d="M62 76V102C62 110 76 110 76 102V94" stroke="#A9C0CE" stroke-width="7" stroke-linecap="round"/>
+              </svg>
+              <span class="card-label">Gajah</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- S05: AKTIVITAS 3 - CARI RUMAH / HABITAT                   -->
+      <!-- ========================================================= -->
+      <section class="screen-view" id="screen-S05" aria-label="Aktivitas 3 Cari Rumah">
+        <div class="top-bar">
+          <button type="button" class="btn-back-pill tactile-btn" data-goto="S02">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M15 19L8 12L15 5" stroke="#2B2118" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Peta</span>
+          </button>
+
+          <button type="button" class="vo-bubble" id="s05-vo">
+            <div class="btn-speaker">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M4 9H8L13 5V19L8 15H4V9Z" fill="#FFFFFF"/>
+                <path class="wave-bar wave-bar-1" d="M16 9C17 9.9 17.5 10.9 17.5 12C17.5 13.1 17 14.1 16 15" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+                <path class="wave-bar wave-bar-2" d="M19 6.5C20.6 8 21.5 9.9 21.5 12C21.5 14.1 20.6 16 19 17.5" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="vo-text" id="s05-vo-text">&ldquo;Di mana rumah Jerapah yang tinggi?&rdquo;</span>
+          </button>
+
+          <div class="progress-pill">
+            <div class="step-dots">
+              <div class="step-dot done" id="s05-dot-1"></div>
+              <div class="step-dot done" id="s05-dot-2"></div>
+              <div class="step-dot" id="s05-dot-3"></div>
+            </div>
+            <span class="progress-num" id="s05-prog">2/3</span>
+          </div>
+        </div>
+
+        <div class="stage-row" style="padding: 0 36px;">
+          <div class="character-stage" id="s05-giraffe" style="flex-direction:column; gap:8px; padding:16px 28px;">
+            <svg width="136" height="148" viewBox="0 0 140 150" fill="none">
+              <line x1="56" y1="16" x2="56" y2="36" stroke="#2B2118" stroke-width="5" stroke-linecap="round"/>
+              <circle cx="56" cy="14" r="6" fill="#D96B14" stroke="#2B2118" stroke-width="3"/>
+              <line x1="84" y1="16" x2="84" y2="36" stroke="#2B2118" stroke-width="5" stroke-linecap="round"/>
+              <circle cx="84" cy="14" r="6" fill="#D96B14" stroke="#2B2118" stroke-width="3"/>
+              <rect x="44" y="32" width="52" height="104" rx="26" fill="#FFD15C" stroke="#2B2118" stroke-width="3.5"/>
+              <circle cx="58" cy="54" r="5" fill="#2B2118"/>
+              <circle cx="82" cy="54" r="5" fill="#2B2118"/>
+              <ellipse cx="70" cy="76" rx="18" ry="12" fill="#F4A261" stroke="#2B2118" stroke-width="3"/>
+              <circle cx="63" cy="75" r="2.5" fill="#2B2118"/>
+              <circle cx="77" cy="75" r="2.5" fill="#2B2118"/>
+              <circle cx="58" cy="108" r="8" fill="#D96B14" opacity="0.6"/>
+              <circle cx="80" cy="120" r="7" fill="#D96B14" opacity="0.6"/>
+            </svg>
+            <span class="card-label">Jerapah</span>
+          </div>
+
+          <div style="display:flex; gap:24px;">
+            <button type="button" class="animal-card" id="card-pohon" style="width:214px; height:228px;">
+              <div class="status-badge-corner badge-star">&#9733;</div>
+              <svg width="150" height="142" viewBox="0 0 150 142" fill="none">
+                <ellipse cx="75" cy="126" rx="58" ry="12" fill="#8CD17D"/>
+                <rect x="68" y="44" width="14" height="82" rx="6" fill="#8C6239" stroke="#2B2118" stroke-width="3"/>
+                <ellipse cx="75" cy="40" rx="56" ry="20" fill="#2B8A57" stroke="#2B2118" stroke-width="3"/>
+                <ellipse cx="75" cy="28" rx="38" ry="14" fill="#4CA66B"/>
+              </svg>
+              <span class="card-label">Pohon Tinggi</span>
+            </button>
+
+            <button type="button" class="animal-card" id="card-kolam" style="width:214px; height:228px;">
+              <div class="status-badge-corner badge-retry">?</div>
+              <svg width="150" height="142" viewBox="0 0 150 142" fill="none">
+                <ellipse cx="75" cy="96" rx="62" ry="28" fill="#56CCF2" stroke="#2B2118" stroke-width="3"/>
+                <path d="M48 92C58 88 68 96 78 92C88 88 96 94 104 92" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round"/>
+              </svg>
+              <span class="card-label">Kolam Air</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- S06: SELEBRASI & HADIAH STIKER                            -->
+      <!-- ========================================================= -->
+      <section class="screen-view" id="screen-S06" aria-label="Selebrasi Hadiah">
+        <svg class="savanna-bg anim-confetti" viewBox="0 0 844 390" preserveAspectRatio="none" fill="none">
+          <circle cx="110" cy="70" r="10" fill="#FF8A1E"/>
+          <circle cx="740" cy="80" r="12" fill="#2B8A57"/>
+          <circle cx="150" cy="310" r="11" fill="#1E6AD4"/>
+          <circle cx="700" cy="300" r="10" fill="#FFB800"/>
+          <rect x="200" y="45" width="16" height="16" rx="4" fill="#FFB800"/>
+          <rect x="630" y="55" width="16" height="16" rx="4" fill="#FF8A1E"/>
+        </svg>
+
+        <div class="top-bar">
+          <div style="width:52px;"></div>
+          <button type="button" class="vo-bubble guide-success" id="s06-vo">
+            <div class="btn-speaker">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M4 9H8L13 5V19L8 15H4V9Z" fill="#FFFFFF"/>
+                <path class="wave-bar wave-bar-1" d="M16 9C17 9.9 17.5 10.9 17.5 12C17.5 13.1 17 14.1 16 15" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+                <path class="wave-bar wave-bar-2" d="M19 6.5C20.6 8 21.5 9.9 21.5 12C21.5 14.1 20.6 16 19 17.5" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="vo-text">&ldquo;Hore! Kamu dapat Stiker Padang Rumput!&rdquo;</span>
+          </button>
+          <div class="progress-pill">
+            <div class="step-dots">
+              <div class="step-dot done"></div>
+              <div class="step-dot done"></div>
+              <div class="step-dot done"></div>
+            </div>
+            <span class="progress-num">3/3</span>
+          </div>
+        </div>
+
+        <div class="celebration-card">
+          <div style="display:flex; align-items:center; gap:24px;">
+            <div class="anim-mascot" style="width:118px; height:118px; border-radius:999px; background:#FFF3D6; border:4px solid #FFB800; display:flex; align-items:center; justify-content:center;">
+              <svg width="84" height="84" viewBox="0 0 140 140" fill="none">
+                <circle cx="70" cy="72" r="50" fill="#D96B14" stroke="#2B2118" stroke-width="4"/>
+                <circle cx="70" cy="74" r="34" fill="#FFCA57" stroke="#2B2118" stroke-width="4"/>
+                <circle cx="58" cy="68" r="5" fill="#2B2118"/>
+                <circle cx="82" cy="68" r="5" fill="#2B2118"/>
+                <path d="M59 87C64 94 76 94 81 87" stroke="#2B2118" stroke-width="4" stroke-linecap="round"/>
+              </svg>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:4px;">
+              <span style="font-size:15px; font-weight:800; color:#2B8A57;">3 STIKER BARU TERBUKA!</span>
+              <h3 style="font-family:'Fredoka',sans-serif; font-size:34px; font-weight:700; color:#2B2118;">Hebat Sekali!</h3>
+              <span style="font-size:16px; font-weight:700; color:#5C4938;">Zona Hutan Rimba sekarang terbuka!</span>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:20px; margin-top:4px;">
+            <button type="button" class="btn-cta-secondary" data-goto="S07">
+              <span>Buku Stiker</span>
+            </button>
+            <button type="button" class="btn-cta-primary" id="btn-s06-next">
+              <span>Lanjut Main</span>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                <path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="#2B2118" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- S07: BUKU KOLEKSI STIKER                                  -->
+      <!-- ========================================================= -->
+      <section class="screen-view" id="screen-S07" aria-label="Buku Koleksi Stiker">
+        <div class="top-bar">
+          <button type="button" class="btn-back-pill tactile-btn" data-goto="S02">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M15 19L8 12L15 5" stroke="#2B2118" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Peta</span>
+          </button>
+
+          <button type="button" class="vo-bubble" id="s07-vo">
+            <div class="btn-speaker">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M4 9H8L13 5V19L8 15H4V9Z" fill="#FFFFFF"/>
+                <path class="wave-bar wave-bar-1" d="M16 9C17 9.9 17.5 10.9 17.5 12C17.5 13.1 17 14.1 16 15" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+                <path class="wave-bar wave-bar-2" d="M19 6.5C20.6 8 21.5 9.9 21.5 12C21.5 14.1 20.6 16 19 17.5" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="vo-text" id="s07-vo-text">&ldquo;Ketuk stikermu untuk dengar suaranya!&rdquo;</span>
+          </button>
+
+          <div class="progress-pill">
+            <span class="progress-num" style="color:#2B8A57;" id="s07-count">0/4 Stiker</span>
+          </div>
+        </div>
+
+        <div class="sticker-grid" id="s07-grid"></div>
+      </section>
+
+      <!-- ========================================================= -->
+      <!-- S08: PARENTAL GATE MODAL OVERLAY                          -->
+      <!-- ========================================================= -->
+      <div class="modal-backdrop" id="modal-S08" role="dialog" aria-modal="true" aria-labelledby="gate-title">
+        <div class="parental-modal">
+          <span style="background:#EFE4CE; color:#5C4938; padding:4px 14px; border-radius:999px; font-size:13px; font-weight:800;">KHUSUS ORANG TUA</span>
+          <h3 style="font-family:'Fredoka',sans-serif; font-size:26px; font-weight:700; color:#2B2118;" id="gate-title">Tekan &amp; Tahan 2 Detik</h3>
+          <p style="font-size:15px; color:#5C4938; max-width:380px;" id="gate-desc">Tahan tombol gembok di bawah selama 2 detik untuk membuka pengaturan suara atau mereset permainan.</p>
+
+          <div id="gate-hold-area" style="display:flex; align-items:center; gap:24px; margin-top:4px;">
+            <button type="button" class="btn-cta-secondary" id="btn-close-gate" style="height:60px; font-size:18px;">
+              <span>Tutup</span>
+            </button>
+
+            <button type="button" class="hold-gate-btn" id="hold-gate-btn" aria-label="Tahan 2 detik untuk membuka">
+              <svg class="hold-ring-svg" width="88" height="88" viewBox="0 0 88 88">
+                <circle cx="44" cy="44" r="39" fill="none" stroke="#DFD1B8" stroke-width="6"/>
+                <circle class="hold-ring-progress" cx="44" cy="44" r="39" fill="none" stroke="#FF8A1E" stroke-width="6" stroke-linecap="round"/>
+              </svg>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                <rect x="5" y="11" width="14" height="10" rx="3" fill="#2B2118"/>
+                <path d="M8 11V7C8 4.79 9.79 3 12 3C14.21 3 16 4.79 16 7V11" stroke="#2B2118" stroke-width="2.5" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="parent-controls-panel" id="parent-controls-panel">
+            <div class="parent-toggle-row">
+              <span>Efek Suara (SFX)</span>
+              <button type="button" class="pill-toggle" id="btn-toggle-sfx">AKTIF</button>
+            </div>
+            <div class="parent-toggle-row">
+              <span>Suara Pemandu (Voice-Over)</span>
+              <button type="button" class="pill-toggle" id="btn-toggle-vo">AKTIF</button>
+            </div>
+            <div style="display:flex; gap:12px; justify-content:center; margin-top:4px;">
+              <button type="button" class="hud-btn" id="btn-reset-parent" style="background:#FEF2E6; color:#D96B14; border-color:#D96B14; padding:8px 16px;">Reset Progres Anak</button>
+              <button type="button" class="hud-btn" id="btn-done-parent" style="background:#2B8A57; color:#FFFFFF; border-color:#2B2118; padding:8px 20px;">Selesai</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+
+  <script>
+    (function () {
+      const state = {
+        currentScreen: 'S01',
+        stars: 0,
+        sfxEnabled: true,
+        voEnabled: true,
+        stickers: { singa: false, gajah: false, jerapah: false },
+        hutanUnlocked: false,
+        autoTimer: null,
+        holdTimer: null,
+        draggedItem: null
+      };
+
+      /* AUDIO & VOICE SYNTHESIS */
+      function playTone(type) {
+        if (!state.sfxEnabled) return;
+        try {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!AudioCtx) return;
+          const ctx = new AudioCtx();
+          const now = ctx.currentTime;
+          const note = (freq, start, dur, wave = 'sine', vol = 0.14) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = wave;
+            osc.frequency.setValueAtTime(freq, now + start);
+            gain.gain.setValueAtTime(vol, now + start);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + start + dur);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now + start);
+            osc.stop(now + start + dur);
+          };
+
+          if (type === 'success') {
+            note(523.25, 0, 0.16, 'triangle', 0.16);
+            note(659.25, 0.1, 0.2, 'triangle', 0.16);
+            note(783.99, 0.2, 0.3, 'triangle', 0.18);
+          } else if (type === 'fanfare') {
+            note(523.25, 0, 0.14, 'triangle', 0.16);
+            note(659.25, 0.1, 0.14, 'triangle', 0.16);
+            note(783.99, 0.2, 0.16, 'triangle', 0.16);
+            note(1046.5, 0.32, 0.42, 'triangle', 0.2);
+          } else if (type === 'roar') {
+            note(155, 0, 0.28, 'sawtooth', 0.1);
+            note(125, 0.15, 0.38, 'sawtooth', 0.12);
+          } else if (type === 'gentle') {
+            note(329.63, 0, 0.14, 'sine', 0.12);
+            note(293.66, 0.11, 0.2, 'sine', 0.12);
+          } else {
+            note(587.33, 0, 0.09, 'sine', 0.1);
+          }
+        } catch (e) {}
+      }
+
+      function speak(text, onComplete) {
+        clearTimeout(state.autoTimer);
+
+        if (!state.voEnabled || !('speechSynthesis' in window)) {
+          if (onComplete) {
+            state.autoTimer = setTimeout(onComplete, 800);
+          }
+          return;
+        }
+
+        try {
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(text);
+          u.lang = 'id-ID';
+          u.rate = 0.96;
+          u.pitch = 1.12;
+
+          let finished = false;
+          const finishOnce = () => {
+            if (finished) return;
+            finished = true;
+            clearTimeout(state.autoTimer);
+            if (onComplete) onComplete();
+          };
+
+          u.onend = () => {
+            state.autoTimer = setTimeout(finishOnce, 250);
+          };
+          u.onerror = () => {
+            state.autoTimer = setTimeout(finishOnce, 500);
+          };
+
+          window.speechSynthesis.speak(u);
+
+          if (onComplete) {
+            const estimatedMs = Math.max(1500, text.length * 85);
+            state.autoTimer = setTimeout(finishOnce, estimatedMs);
+          }
+        } catch (e) {
+          if (onComplete) {
+            state.autoTimer = setTimeout(onComplete, 800);
+          }
+        }
+      }
+
+      function triggerVoBubble(el, msg) {
+        playTone('tap');
+        if (el) {
+          el.classList.add('is-speaking');
+          setTimeout(() => el.classList.remove('is-speaking'), 1300);
+        }
+        if (msg) speak(msg);
+      }
+
+      /* NAVIGATION CORE */
+      function goToScreen(screenId, customVo) {
+        clearTimeout(state.autoTimer);
+        playTone('tap');
+
+        document.querySelectorAll('.screen-view').forEach(sec => {
+          sec.classList.remove('is-active');
+        });
+        const target = document.getElementById('screen-' + screenId);
+        if (target) {
+          target.classList.add('is-active');
+          state.currentScreen = screenId;
+        }
+
+        document.querySelectorAll('.nav-chip').forEach(chip => {
+          chip.classList.toggle('active', chip.dataset.nav === screenId);
+        });
+
+        if (screenId === 'S07') renderStickerBook();
+
+        if (customVo && target) {
+          const voText = target.querySelector('.vo-text');
+          const voBubble = target.querySelector('.vo-bubble');
+          if (voText) voText.textContent = '“' + customVo + '”';
+          triggerVoBubble(voBubble, customVo);
+        }
+      }
+
+      function syncProgressUI() {
+        document.getElementById('s02-stars').textContent = state.stars + '/3';
+        const count = Object.values(state.stickers).filter(Boolean).length;
+        document.getElementById('s01-sticker-count').textContent = count;
+        document.getElementById('s07-count').textContent = count + '/4 Stiker';
+
+        if (state.hutanUnlocked) {
+          const padang = document.getElementById('zone-padang');
+          padang.classList.remove('unlocked');
+          padang.classList.add('completed');
+          document.getElementById('zone-padang-badge').textContent = 'SELESAI ★';
+          document.getElementById('zone-padang-badge').style.background = '#2B8A57';
+          document.getElementById('zone-padang-badge').style.color = '#FFFFFF';
+          document.getElementById('zone-padang-pill').style.background = '#2B8A57';
+          document.getElementById('zone-padang-pill').style.color = '#FFFFFF';
+
+          const hutan = document.getElementById('zone-hutan');
+          hutan.classList.remove('locked');
+          hutan.classList.add('unlocked');
+          document.getElementById('zone-hutan-badge').style.display = 'inline-block';
+          document.getElementById('hutan-lock-icon').style.display = 'none';
+          document.getElementById('hutan-ground').setAttribute('fill', '#8CD17D');
+          document.getElementById('hutan-leaf-1').setAttribute('fill', '#2B8A57');
+          document.getElementById('hutan-leaf-2').setAttribute('fill', '#2B8A57');
+          document.getElementById('hutan-leaf-3').setAttribute('fill', '#4CA66B');
+          document.getElementById('zone-hutan-pill').style.background = '#FF8A1E';
+          document.getElementById('zone-hutan-pill').style.color = '#2B2118';
+        }
+      }
+
+      /* S01 EVENTS */
+      document.getElementById('btn-start-main').addEventListener('click', () => {
+        playTone('success');
+        goToScreen('S02', 'Pilih tempat bertualang! Ketuk Padang Rumput!');
+      });
+
+      document.getElementById('btn-s01-stickers').addEventListener('click', () => {
+        goToScreen('S07', 'Ketuk stikermu untuk dengar suaranya!');
+      });
+
+      document.getElementById('s01-vo-btn').addEventListener('click', function () {
+        triggerVoBubble(this, 'Halo! Ayo bertualang di Safari Kecil!');
+      });
+
+      /* Generic data-goto buttons */
+      document.querySelectorAll('[data-goto]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          goToScreen(btn.dataset.goto);
+        });
+      });
+
+      /* Bottom nav bar */
+      document.querySelectorAll('.nav-chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          const target = chip.dataset.nav;
+          if (target === 'S08') {
+            openParentalGate();
+          } else {
+            goToScreen(target);
+          }
+        });
+      });
+
+      /* S02 EVENTS */
+      document.getElementById('zone-padang').addEventListener('click', () => {
+        playTone('success');
+        goToScreen('S03');
+        setTimeout(() => {
+          playTone('roar');
+          speak('Aummm! Suara hewan apa itu?');
+        }, 250);
+      });
+
+      function wiggleZone(el, msg) {
+        playTone('gentle');
+        el.classList.remove('anim-wiggle-once');
+        void el.offsetWidth;
+        el.classList.add('anim-wiggle-once');
+        document.getElementById('s02-vo-text').textContent = '“' + msg + '”';
+        speak(msg);
+      }
+
+      document.getElementById('zone-hutan').addEventListener('click', function () {
+        if (!state.hutanUnlocked) {
+          wiggleZone(this, 'Selesaikan Padang Rumput dulu untuk membuka Hutan Rimba!');
+        } else {
+          playTone('success');
+          const msg = 'Hutan Rimba sudah terbuka! Yuk lihat koleksi stikermu!';
+          document.getElementById('s02-vo-text').textContent = '“' + msg + '”';
+          speak(msg);
+        }
+      });
+
+      document.getElementById('zone-peternakan').addEventListener('click', function () {
+        wiggleZone(this, 'Selesaikan Padang Rumput dulu untuk membuka Peternakan!');
+      });
+
+      document.getElementById('s02-vo').addEventListener('click', function () {
+        triggerVoBubble(this, document.getElementById('s02-vo-text').textContent.replace(/[“”]/g, ''));
+      });
+
+      /* S03 EVENTS (TEBAK SUARA) */
+      document.getElementById('s03-vo').addEventListener('click', function () {
+        playTone('roar');
+        triggerVoBubble(this, 'Aummm! Suara hewan apa itu?');
+      });
+
+      document.querySelectorAll('#s03-cards .animal-card').forEach(card => {
+        card.addEventListener('click', () => {
+          const isCorrect = card.dataset.correct === 'true';
+          const animal = card.dataset.animal;
+          const voBox = document.getElementById('s03-vo');
+          const voText = document.getElementById('s03-vo-text');
+
+          if (isCorrect) {
+            playTone('success');
+            document.querySelectorAll('#s03-cards .animal-card').forEach(c => {
+              if (c !== card) c.classList.add('is-dimmed');
+            });
+            card.classList.remove('state-retry', 'anim-wiggle-once', 'is-dimmed');
+            card.classList.add('state-correct', 'anim-pop-once');
+            document.getElementById('label-singa').textContent = 'Singa!';
+            document.getElementById('label-singa').style.color = '#1D5E3B';
+
+            voBox.classList.remove('guide-retry');
+            voBox.classList.add('guide-success');
+            const msg = 'Hebat! Itu Singa yang mengaum!';
+            voText.textContent = '“' + msg + '”';
+
+            state.stars = Math.max(state.stars, 1);
+            state.stickers.singa = true;
+            document.getElementById('s03-dot-1').classList.add('done');
+            document.getElementById('s03-prog').textContent = '1/3';
+            syncProgressUI();
+
+            speak(msg, () => {
+              goToScreen('S04', 'Gajah lapar! Ketuk atau tarik pisang!');
+            });
+          } else {
+            playTone('gentle');
+            card.classList.remove('anim-wiggle-once');
+            void card.offsetWidth;
+            card.classList.add('state-retry', 'anim-wiggle-once');
+            voBox.classList.remove('guide-success');
+            voBox.classList.add('guide-retry');
+            const msg = 'Itu ' + animal + '! Yuk cari yang mengaum!';
+            voText.textContent = '“' + msg + '”';
+            speak(msg);
+          }
+        });
+      });
+
+      /* S04 EVENTS (BERI MAKAN) */
+      const tokenPisang = document.getElementById('token-pisang');
+      const tokenTulang = document.getElementById('token-tulang');
+      const dropzoneS04 = document.getElementById('s04-dropzone');
+
+      function feedElephant() {
+        playTone('success');
+        const elephant = document.getElementById('s04-elephant');
+        const voBox = document.getElementById('s04-vo');
+        dropzoneS04.classList.add('fed');
+        tokenPisang.classList.add('is-eaten');
+        document.getElementById('s04-drop-label').textContent = 'NYAM! ENAK!';
+        document.getElementById('s04-drop-icon').innerHTML =
+          '<svg width="52" height="52" viewBox="0 0 64 64" fill="none"><path d="M16 44C28 48 46 38 48 16C42 18 36 34 16 44Z" fill="#FFD13B" stroke="#2B2118" stroke-width="3.5" stroke-linejoin="round"/></svg>';
+
+        voBox.classList.remove('guide-retry');
+        voBox.classList.add('guide-success');
+        const msg = 'Nyam nyam! Gajah suka pisang!';
+        document.getElementById('s04-vo-text').textContent = '“' + msg + '”';
+
+        state.stars = Math.max(state.stars, 2);
+        state.stickers.gajah = true;
+        document.getElementById('s04-dot-2').classList.add('done');
+        document.getElementById('s04-prog').textContent = '2/3';
+        syncProgressUI();
+
+        elephant.classList.remove('anim-pop-once');
+        void elephant.offsetWidth;
+        elephant.classList.add('anim-pop-once');
+
+        speak(msg, () => {
+          goToScreen('S05', 'Di mana rumah Jerapah yang tinggi?');
+        });
+      }
+
+      function wrongFood() {
+        playTone('gentle');
+        tokenTulang.classList.remove('anim-wiggle-once');
+        void tokenTulang.offsetWidth;
+        tokenTulang.classList.add('anim-wiggle-once');
+        const voBox = document.getElementById('s04-vo');
+        voBox.classList.remove('guide-success');
+        voBox.classList.add('guide-retry');
+        const msg = 'Itu tulang! Gajah suka makan pisang!';
+        document.getElementById('s04-vo-text').textContent = '“' + msg + '”';
+        speak(msg);
+      }
+
+      tokenPisang.addEventListener('click', feedElephant);
+      dropzoneS04.addEventListener('click', feedElephant);
+      tokenTulang.addEventListener('click', wrongFood);
+
+      tokenPisang.addEventListener('dragstart', () => { state.draggedItem = 'pisang'; });
+      tokenTulang.addEventListener('dragstart', () => { state.draggedItem = 'tulang'; });
+      dropzoneS04.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzoneS04.classList.add('drag-over');
+      });
+      dropzoneS04.addEventListener('dragleave', () => {
+        dropzoneS04.classList.remove('drag-over');
+      });
+      dropzoneS04.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzoneS04.classList.remove('drag-over');
+        if (state.draggedItem === 'pisang') feedElephant();
+        if (state.draggedItem === 'tulang') wrongFood();
+      });
+
+      document.getElementById('s04-vo').addEventListener('click', function () {
+        triggerVoBubble(this, document.getElementById('s04-vo-text').textContent.replace(/[“”]/g, ''));
+      });
+
+      /* S05 EVENTS (CARI RUMAH) */
+      document.getElementById('card-pohon').addEventListener('click', function () {
+        playTone('success');
+        document.getElementById('card-kolam').classList.add('is-dimmed');
+        this.classList.remove('state-retry', 'anim-wiggle-once', 'is-dimmed');
+        this.classList.add('state-correct', 'anim-pop-once');
+
+        const voBox = document.getElementById('s05-vo');
+        voBox.classList.remove('guide-retry');
+        voBox.classList.add('guide-success');
+        const msg = 'Benar! Jerapah makan daun di pohon tinggi!';
+        document.getElementById('s05-vo-text').textContent = '“' + msg + '”';
+
+        state.stars = 3;
+        state.stickers.jerapah = true;
+        state.hutanUnlocked = true;
+        document.getElementById('s05-dot-3').classList.add('done');
+        document.getElementById('s05-prog').textContent = '3/3';
+        syncProgressUI();
+
+        speak(msg, () => {
+          goToScreen('S06');
+          playTone('fanfare');
+          speak('Hore! Kamu dapat Stiker Padang Rumput!');
+        });
+      });
+
+      document.getElementById('card-kolam').addEventListener('click', function () {
+        playTone('gentle');
+        this.classList.remove('anim-wiggle-once');
+        void this.offsetWidth;
+        this.classList.add('state-retry', 'anim-wiggle-once');
+        const voBox = document.getElementById('s05-vo');
+        voBox.classList.remove('guide-success');
+        voBox.classList.add('guide-retry');
+        const msg = 'Itu kolam air! Cari pohon yang tinggi untuk Jerapah!';
+        document.getElementById('s05-vo-text').textContent = '“' + msg + '”';
+        speak(msg);
+      });
+
+      document.getElementById('s05-vo').addEventListener('click', function () {
+        triggerVoBubble(this, document.getElementById('s05-vo-text').textContent.replace(/[“”]/g, ''));
+      });
+
+      /* S06 EVENTS */
+      document.getElementById('btn-s06-next').addEventListener('click', () => {
+        goToScreen('S02', 'Hore! Hutan Rimba sekarang terbuka!');
+      });
+
+      document.getElementById('s06-vo').addEventListener('click', function () {
+        triggerVoBubble(this, 'Hore! Kamu dapat Stiker Padang Rumput!');
+      });
+
+      /* S07 STICKER BOOK */
+      function renderStickerBook() {
+        const grid = document.getElementById('s07-grid');
+        const items = [
+          {
+            name: 'Singa',
+            sound: 'Singa: Aummm!',
+            tone: 'roar',
+            unlocked: state.stickers.singa,
+            svg: '<svg width="104" height="104" viewBox="0 0 140 140" fill="none"><circle cx="70" cy="72" r="50" fill="#D96B14" stroke="#2B2118" stroke-width="4"/><circle cx="70" cy="74" r="34" fill="#FFCA57" stroke="#2B2118" stroke-width="4"/><circle cx="58" cy="68" r="5" fill="#2B2118"/><circle cx="82" cy="68" r="5" fill="#2B2118"/><path d="M61 88C65 92 75 92 79 88" stroke="#2B2118" stroke-width="3.5" stroke-linecap="round"/></svg>'
+          },
+          {
+            name: 'Gajah',
+            sound: 'Gajah: Preettt! Suka pisang!',
+            tone: 'success',
+            unlocked: state.stickers.gajah,
+            svg: '<svg width="104" height="104" viewBox="0 0 140 140" fill="none"><ellipse cx="34" cy="72" rx="22" ry="30" fill="#8FA8B8" stroke="#2B2118" stroke-width="3.5"/><ellipse cx="106" cy="72" rx="22" ry="30" fill="#8FA8B8" stroke="#2B2118" stroke-width="3.5"/><circle cx="70" cy="70" r="36" fill="#A9C0CE" stroke="#2B2118" stroke-width="3.5"/><circle cx="57" cy="64" r="5" fill="#2B2118"/><circle cx="83" cy="64" r="5" fill="#2B2118"/><path d="M62 76V102C62 110 76 110 76 102V94" stroke="#2B2118" stroke-width="14" stroke-linecap="round"/><path d="M62 76V102C62 110 76 110 76 102V94" stroke="#A9C0CE" stroke-width="7" stroke-linecap="round"/></svg>'
+          },
+          {
+            name: 'Jerapah',
+            sound: 'Jerapah: Nyam nyam daun tinggi!',
+            tone: 'success',
+            unlocked: state.stickers.jerapah,
+            svg: '<svg width="104" height="104" viewBox="0 0 140 140" fill="none"><rect x="44" y="40" width="52" height="68" rx="26" fill="#FFD15C" stroke="#2B2118" stroke-width="3.5"/><circle cx="58" cy="64" r="5" fill="#2B2118"/><circle cx="82" cy="64" r="5" fill="#2B2118"/><ellipse cx="70" cy="88" rx="20" ry="14" fill="#F4A261" stroke="#2B2118" stroke-width="3"/></svg>'
+          },
+          {
+            name: 'Hutan Rimba',
+            sound: '',
+            tone: 'gentle',
+            unlocked: false,
+            svg: ''
+          }
+        ];
+
+        grid.innerHTML = '';
+        items.forEach(item => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          if (item.unlocked) {
+            btn.className = 'sticker-slot collected';
+            btn.innerHTML = item.svg + '<span class="card-label">' + item.name + '</span>';
+            btn.addEventListener('click', () => {
+              playTone(item.tone);
+              btn.classList.remove('anim-pop-once');
+              void btn.offsetWidth;
+              btn.classList.add('anim-pop-once');
+              document.getElementById('s07-vo-text').textContent = '“' + item.sound + '”';
+              speak(item.sound);
+            });
+          } else {
+            btn.className = 'sticker-slot empty';
+            btn.innerHTML = '<div style="width:84px; height:84px; border-radius:999px; background:#DFD1B8; display:flex; align-items:center; justify-content:center; margin-top:16px;"><span style="font-family:\'Fredoka\',sans-serif; font-size:36px; color:#8A7963;">?</span></div><span style="font-size:16px; font-weight:800; color:#8A7963;">' + item.name + '</span>';
+            btn.addEventListener('click', () => {
+              playTone('gentle');
+              btn.classList.remove('anim-wiggle-once');
+              void btn.offsetWidth;
+              btn.classList.add('anim-wiggle-once');
+              const msg = 'Mainkan Padang Rumput untuk membuka stiker ' + item.name + '!';
+              document.getElementById('s07-vo-text').textContent = '“' + msg + '”';
+              speak(msg);
+            });
+          }
+          grid.appendChild(btn);
+        });
+        syncProgressUI();
+      }
+
+      document.getElementById('s07-vo').addEventListener('click', function () {
+        triggerVoBubble(this, document.getElementById('s07-vo-text').textContent.replace(/[“”]/g, ''));
+      });
+
+      /* S08 PARENTAL GATE */
+      const holdBtn = document.getElementById('hold-gate-btn');
+
+      function openParentalGate() {
+        playTone('tap');
+        clearTimeout(state.holdTimer);
+        holdBtn.classList.remove('holding');
+        document.getElementById('gate-title').textContent = 'Tekan & Tahan 2 Detik';
+        document.getElementById('gate-desc').textContent = 'Tahan tombol gembok di bawah selama 2 detik untuk membuka pengaturan suara atau mereset permainan.';
+        document.getElementById('gate-hold-area').style.display = 'flex';
+        document.getElementById('parent-controls-panel').classList.remove('unlocked');
+        document.getElementById('modal-S08').classList.add('is-open');
+      }
+
+      function closeParentalGate() {
+        playTone('tap');
+        clearTimeout(state.holdTimer);
+        document.getElementById('modal-S08').classList.remove('is-open');
+      }
+
+      function startHold() {
+        holdBtn.classList.add('holding');
+        state.holdTimer = setTimeout(() => {
+          playTone('success');
+          document.getElementById('gate-title').textContent = 'Menu Orang Tua';
+          document.getElementById('gate-desc').textContent = 'Atur preferensi audio atau ulangi progres petualangan anak.';
+          document.getElementById('gate-hold-area').style.display = 'none';
+          document.getElementById('parent-controls-panel').classList.add('unlocked');
+        }, 2000);
+      }
+
+      function cancelHold() {
+        clearTimeout(state.holdTimer);
+        holdBtn.classList.remove('holding');
+      }
+
+      document.getElementById('btn-open-gate').addEventListener('click', openParentalGate);
+      document.getElementById('btn-close-gate').addEventListener('click', closeParentalGate);
+      document.getElementById('btn-done-parent').addEventListener('click', closeParentalGate);
+
+      holdBtn.addEventListener('mousedown', startHold);
+      holdBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startHold(); });
+      holdBtn.addEventListener('mouseup', cancelHold);
+      holdBtn.addEventListener('mouseleave', cancelHold);
+      holdBtn.addEventListener('touchend', cancelHold);
+
+      document.getElementById('btn-toggle-sfx').addEventListener('click', function () {
+        state.sfxEnabled = !state.sfxEnabled;
+        this.textContent = state.sfxEnabled ? 'AKTIF' : 'MATI';
+        this.classList.toggle('off', !state.sfxEnabled);
+        if (state.sfxEnabled) playTone('tap');
+      });
+
+      document.getElementById('btn-toggle-vo').addEventListener('click', function () {
+        state.voEnabled = !state.voEnabled;
+        this.textContent = state.voEnabled ? 'AKTIF' : 'MATI';
+        this.classList.toggle('off', !state.voEnabled);
+        if (!state.voEnabled && 'speechSynthesis' in window) window.speechSynthesis.cancel();
+        playTone('tap');
+      });
+
+      /* RESET ALL */
+      function resetAll() {
+        clearTimeout(state.autoTimer);
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+        state.stars = 0;
+        state.stickers = { singa: false, gajah: false, jerapah: false };
+        state.hutanUnlocked = false;
+
+        const padang = document.getElementById('zone-padang');
+        padang.classList.remove('completed');
+        padang.classList.add('unlocked');
+        document.getElementById('zone-padang-badge').textContent = 'AYO MAIN!';
+        document.getElementById('zone-padang-badge').style.background = '#FF8A1E';
+        document.getElementById('zone-padang-badge').style.color = '#2B2118';
+        document.getElementById('zone-padang-pill').style.background = '#FF8A1E';
+        document.getElementById('zone-padang-pill').style.color = '#2B2118';
+
+        const hutan = document.getElementById('zone-hutan');
+        hutan.classList.remove('unlocked');
+        hutan.classList.add('locked');
+        document.getElementById('zone-hutan-badge').style.display = 'none';
+        document.getElementById('hutan-lock-icon').style.display = 'block';
+        document.getElementById('hutan-ground').setAttribute('fill', '#D5C6AD');
+        document.getElementById('hutan-leaf-1').setAttribute('fill', '#BFB096');
+        document.getElementById('hutan-leaf-2').setAttribute('fill', '#BFB096');
+        document.getElementById('hutan-leaf-3').setAttribute('fill', '#C9BA9F');
+        document.getElementById('zone-hutan-pill').style.background = '#DFD1B8';
+        document.getElementById('zone-hutan-pill').style.color = '#5C4938';
+        document.getElementById('s02-vo-text').textContent = '“Pilih tempat bertualang! Ketuk Padang Rumput!”';
+
+        document.querySelectorAll('#s03-cards .animal-card').forEach(c => {
+          c.classList.remove('state-correct', 'state-retry', 'anim-wiggle-once', 'anim-pop-once', 'is-dimmed');
+        });
+        document.getElementById('label-singa').textContent = 'Singa';
+        document.getElementById('label-singa').style.color = '#2B2118';
+        document.getElementById('s03-vo').classList.remove('guide-retry', 'guide-success');
+        document.getElementById('s03-vo-text').textContent = '“Aummm! Suara hewan apa itu?”';
+        document.getElementById('s03-dot-1').classList.remove('done');
+        document.getElementById('s03-prog').textContent = '0/3';
+
+        dropzoneS04.classList.remove('fed', 'drag-over');
+        tokenPisang.classList.remove('is-eaten');
+        document.getElementById('s04-drop-label').textContent = 'TARUH SINI';
+        document.getElementById('s04-drop-icon').innerHTML = '<svg width="40" height="40" viewBox="0 0 40 40" fill="none"><path d="M10 28C18 30 28 24 30 10" stroke="#2B8A57" stroke-width="3.5" stroke-dasharray="5 5" stroke-linecap="round"/></svg>';
+        document.getElementById('s04-vo').classList.remove('guide-retry', 'guide-success');
+        document.getElementById('s04-vo-text').textContent = '“Gajah lapar! Ketuk atau tarik pisang!”';
+        document.getElementById('s04-dot-2').classList.remove('done');
+        document.getElementById('s04-prog').textContent = '1/3';
+
+        ['card-pohon', 'card-kolam'].forEach(id => {
+          document.getElementById(id).classList.remove('state-correct', 'state-retry', 'anim-wiggle-once', 'anim-pop-once', 'is-dimmed');
+        });
+        document.getElementById('s05-vo').classList.remove('guide-retry', 'guide-success');
+        document.getElementById('s05-vo-text').textContent = '“Di mana rumah Jerapah yang tinggi?”';
+        document.getElementById('s05-dot-3').classList.remove('done');
+        document.getElementById('s05-prog').textContent = '2/3';
+
+        syncProgressUI();
+        renderStickerBook();
+        goToScreen('S01');
+      }
+
+      document.getElementById('btn-reset-top').addEventListener('click', resetAll);
+      document.getElementById('btn-reset-parent').addEventListener('click', () => {
+        resetAll();
+        closeParentalGate();
+      });
+
+      renderStickerBook();
+    })();
+  </script>
+</body>
+</html>
